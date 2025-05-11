@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <title>Calculadora de Investimento</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f8f8f8;
+      margin: 0;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    h1 {
+      color: #333;
+      text-align: center;
+    }
+
+    form {
+      background: white;
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      max-width: 400px;
+      width: 100%;
+      margin-bottom: 20px;
+    }
+
+    label {
+      display: block;
+      margin-top: 10px;
+    }
+
+    input {
+      width: 100%;
+      padding: 10px;
+      margin-top: 5px;
+      margin-bottom: 15px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+    }
+
+    button {
+      width: 100%;
+      padding: 10px;
+      background-color: #111;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      margin-top: 10px;
+    }
+
+    #resultado {
+      margin-top: 20px;
+      font-size: 1.2em;
+      color: #2b6e44;
+      text-align: center;
+    }
+
+    canvas {
+      margin-top: 20px;
+      max-width: 100%;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Calculadora de Investimento</h1>
+
+  <form id="form">
+    <label>Quanto será investido por mês?</label>
+    <input type="number" step="0.01" id="investimento" required>
+
+    <label>Quantos meses pretende deixar render?</label>
+    <input type="number" id="tempo" required>
+
+    <label>Qual a taxa dos juros? (em decimal, ex: 0.01)</label>
+    <input type="number" step="0.001" id="juros" required>
+
+    <button type="submit">Calcular</button>
+    <button type="button" id="exportarPDF">Exportar Resultado</button>
+  </form>
+
+  <div id="resultado"></div>
+  <canvas id="grafico" height="200"></canvas>
+
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- jsPDF -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+  <script>
+    let chart;
+
+    document.getElementById("form").addEventListener("submit", function(event) {
+      event.preventDefault();
+
+      const investimento = parseFloat(document.getElementById("investimento").value);
+      const tempo = parseInt(document.getElementById("tempo").value);
+      let juros = parseFloat(document.getElementById("juros").value);
+      const originalJuros = juros;
+      juros += 1;
+
+      const valores = [];
+      const labels = [];
+
+      for (let mes = 1; mes <= tempo; mes++) {
+        const montante = investimento * ((Math.pow(juros, mes) - 1) / (juros - 1));
+        valores.push(montante.toFixed(2));
+        labels.push(`Mês ${mes}`);
+      }
+
+      const resultadoFinal = valores[valores.length - 1];
+      document.getElementById("resultado").textContent = `O resultado é: R$ ${parseFloat(resultadoFinal).toFixed(2)}`;
+
+      // Gráfico
+      if (chart) chart.destroy();
+      const ctx = document.getElementById('grafico').getContext('2d');
+      chart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: labels,
+          datasets: [{
+            label: 'Evolução do Investimento',
+            data: valores,
+            borderColor: '#2b6e44',
+            backgroundColor: 'rgba(43, 110, 68, 0.1)',
+            tension: 0.2,
+            fill: true,
+            pointRadius: 2,
+          }]
+        },
+        options: {
+          responsive: true,
+          scales: {
+            y: {
+              beginAtZero: true
+            }
+          }
+        }
+      });
+    });
+
+    document.getElementById("exportarPDF").addEventListener("click", function() {
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF();
+
+      const investimento = document.getElementById("investimento").value;
+      const tempo = document.getElementById("tempo").value;
+      const juros = document.getElementById("juros").value;
+      const resultado = document.getElementById("resultado").textContent;
+
+      doc.setFontSize(14);
+      doc.text("Relatório de Investimento", 20, 20);
+      doc.setFontSize(12);
+      doc.text(`Investimento mensal: R$ ${investimento}`, 20, 40);
+      doc.text(`Tempo: ${tempo} meses`, 20, 50);
+      doc.text(`Taxa de juros: ${juros}`, 20, 60);
+      doc.text(resultado, 20, 80);
+
+      doc.save("investimento.pdf");
+    });
+  </script>
+</body>
+</html>
